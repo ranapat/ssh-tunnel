@@ -1,0 +1,165 @@
+#!/bin/bash
+
+DEFAULT_REMOTE_HOST='your.host.name'
+DEFAULT_REMOTE_PORT='10000'
+DEFAULT_LOCAL_PORT='22'
+DEFAULT_LOCAL_NAME='current.location'
+DEFAULT_LOCAL_USER='user'
+
+LOCAL_HOST='localhost'
+
+CONFIG_DIRECTORY="$HOME/.ssh_tunnel.d"
+CONFIG_FILE="$CONFIG_DIRECTORY/config"
+SECURED_CONFIG_FILE='/tmp/.ssh_tunnel.config'
+
+COLOR_RED=`tput setaf 1`
+COLOR_GREEN=`tput setaf 2`
+COLOR_YELLOW=`tput setaf 3`
+COLOR_WHITE=`tput setaf 7`
+COLOR_GRAY=`tput setaf 8`
+COLOR_LIGHT_GREEN=`tput setaf 10`
+COLOR_RESET=`tput sgr0`
+
+function loadConfig() {
+    if [ ! -f $CONFIG_FILE ]; then
+        echo "${PREFIX}${COLOR_YELLOW}config file not found in $CONFIG_FILE. Using default settings...${COLOR_RESET}"
+        echo "${PREFIX}${COLOR_GREEN}to greate one call: ${COLOR_LIGHT_GREEN}.ssh_tunnel config${COLOR_RESET}"
+
+        REMOTE_HOST=$DEFAULT_REMOTE_HOST
+        REMOTE_PORT=$DEFAULT_REMOTE_PORT
+        LOCAL_PORT=$DEFAULT_LOCAL_PORT
+        LOCAL_NAME=$DEFAULT_LOCAL_NAME
+        LOCAL_USER=$DEFAULT_LOCAL_USER
+    else
+        if egrep -q -v '^#|^[^ ]*=[^;]*' $CONFIG_FILE; then
+            #echo "${PREFIX}${COLOR_YELLOW}cleaning config file...${COLOR_RESET}"
+
+            egrep '^#|^[^ ]*=[^;&]*' $CONFIG_FILE > $SECURED_CONFIG_FILE
+            configfile=$SECURED_CONFIG_FILE
+        else
+            configfile=$CONFIG_FILE
+        fi
+
+        source $configfile
+
+        if [ -z ${remote_host+x} ]; then REMOTE_HOST=$DEFAULT_REMOTE_HOST; else REMOTE_HOST=$remote_host; fi
+        if [ -z ${remote_port+x} ]; then REMOTE_PORT=$DEFAULT_REMOTE_PORT; else REMOTE_PORT=$remote_port; fi
+        if [ -z ${local_port+x} ]; then LOCAL_PORT=$DEFAULT_LOCAL_PORT; else LOCAL_PORT=$local_port; fi
+        if [ -z ${local_name+x} ]; then LOCAL_NAME=$DEFAULT_LOCAL_NAME; else LOCAL_NAME=$local_name; fi
+        if [ -z ${local_user+x} ]; then LOCAL_USER=$DEFAULT_LOCAL_USER; else LOCAL_USER=$local_user; fi
+
+        if [ ! -f $SECURED_CONFIG_FILE ]; then
+            :
+        else
+            rm $SECURED_CONFIG_FILE
+        fi
+    fi
+}
+
+loadConfig
+unset -f loadConfig
+
+CURRENT_PID=$(ps ax | grep ssh | grep "${REMOTE_PORT}:${LOCAL_HOST}:${LOCAL_PORT} ${REMOTE_HOST}" | awk '{print $1}')
+
+if [ -t 0 ]; then
+    INTERACTIVE=1
+else
+    INTERACTIVE=0
+fi
+
+ACTION="$1"
+
+if [ "$INTERACTIVE" = "0" ]; then
+    echo ""
+
+    PREFIX="`date +'%Y-%m-%d %H-%M-%S'` ";
+fi
+
+if [ "$1" = "status" ]; then
+    if [ -z "${CURRENT_PID}" ]; then
+        echo "${PREFIX}${COLOR_RED}currently not connected${COLOR_RESET}"
+    else
+        echo "${PREFIX}${COLOR_LIGHT_GREEN}connected with pid ${COLOR_GREEN}$CURRENT_PID${COLOR_RESET}"
+
+        echo "${PREFIX}${COLOR_YELLOW}checking if connection is still alive...${COLOR_RESET}"
+        ssh $REMOTE_HOST netstat -an | egrep "tcp.*:$REMOTE_PORT.*LISTEN" > /dev/null 2>&1
+        if [ $? -ne 0 ] ; then
+            echo "${PREFIX}${COLOR_RED}connection seems to be dead${COLOR_RESET}"
+        else
+            echo "${PREFIX}${COLOR_LIGHT_GREEN}connection is alive${COLOR_RESET}"
+        fi
+    fi
+
+elif [ "$1" = "stop" ]; then
+    if [ -z "${CURRENT_PID}" ]; then
+        echo "${PREFIX}${COLOR_RED}currently not connected${COLOR_RESET}"
+    else
+        echo "${PREFIX}${COLOR_YELLOW}connected with pid ${COLOR_GREEN}$CURRENT_PID${COLOR_RESET}"
+        kill -9 $CURRENT_PID
+        echo "${PREFIX}${COLOR_LIGHT_GREEN}killed process with pid ${COLOR_GREEN}$CURRENT_PID${COLOR_RESET}"
+    fi
+
+elif [ "$1" = "start" ]; then
+    if [ -z "${CURRENT_PID}" ]; then
+        echo "${PREFIX}${COLOR_YELLOW}currently not connected, connecting...${COLOR_RESET}"
+        nohup ssh -f -N -R $REMOTE_PORT:$LOCAL_HOST:$LOCAL_PORT $REMOTE_HOST
+    else
+        echo "${PREFIX}${COLOR_YELLOW}already connected with pid ${COLOR_GREEN}$CURRENT_PID${COLOR_RESET}"
+
+        echo "${PREFIX}${COLOR_YELLOW}checking if connection is still alive...${COLOR_RESET}"
+        ssh $REMOTE_HOST netstat -an | egrep "tcp.*:$REMOTE_PORT.*LISTEN" > /dev/null 2>&1
+        if [ $? -ne 0 ] ; then
+            echo "${PREFIX}${COLOR_RED}connection seems to be dead, killing...${COLOR_RESET}"
+            kill -9 $CURRENT_PID
+
+            echo "${PREFIX}${COLOR_YELLOW}recreating the connection...${COLOR_RESET}"
+            nohup ssh -f -N -R $REMOTE_PORT:$LOCAL_HOST:$LOCAL_PORT $REMOTE_HOST
+        else
+            echo "${PREFIX}${COLOR_LIGHT_GREEN}connection is alive${COLOR_RESET}"
+        fi
+    fi
+
+elif [ "$1" = "restart" ]; then
+    if [ -z "${CURRENT_PID}" ]; then
+        echo "${PREFIX}${COLOR_YELLOW}currently not connected, connecting...${COLOR_RESET}"
+        nohup ssh -f -N -R $REMOTE_PORT:$LOCAL_HOST:$LOCAL_PORT $REMOTE_HOST
+    else
+        echo "${PREFIX}${COLOR_YELLOW}already connected with pid ${COLOR_GREEN}$CURRENT_PID${COLOR_RESET}"
+        kill -9 $CURRENT_PID
+        echo "${PREFIX}${COLOR_YELLOW}killed process with pid ${COLOR_GREEN}$CURRENT_PID${COLOR_RESET}"
+        nohup ssh -f -N -R $REMOTE_PORT:$LOCAL_HOST:$LOCAL_PORT $REMOTE_HOST
+    fi
+
+elif [ "$1" = "config" ]; then
+    if [ -d $CONFIG_DIRECTORY ]; then
+        :
+    else
+        echo "${PREFIX}${COLOR_YELLOW}config directory does not exist, creating...${COLOR_RESET}"
+
+        mkdir $CONFIG_DIRECTORY
+    fi
+
+    if [ ! -f $CONFIG_FILE ]; then
+        echo "remote_host=$DEFAULT_REMOTE_HOST" >> $CONFIG_FILE
+        echo "remote_port=$DEFAULT_REMOTE_PORT" >> $CONFIG_FILE
+        echo "local_port=$DEFAULT_LOCAL_PORT" >> $CONFIG_FILE
+        echo "local_name=$DEFAULT_LOCAL_NAME" >> $CONFIG_FILE
+        echo "local_user=$DEFAULT_LOCAL_USER" >> $CONFIG_FILE
+    fi
+
+    vim $CONFIG_FILE
+
+elif [ "$1" = "register" ]; then
+    echo "${PREFIX}${COLOR_YELLOW}trying to register on remote server...${COLOR_RESET}"
+    ssh $REMOTE_HOST "
+            if [ -d .ssh/config.d ]; then :; else mkdir .ssh/config.d; fi
+
+            echo \"Host $LOCAL_NAME\" > .ssh/config.d/$LOCAL_NAME
+            echo \"    Port $REMOTE_PORT\" >> .ssh/config.d/$LOCAL_NAME
+            echo \"    User $LOCAL_USER\" >> .ssh/config.d/$LOCAL_NAME
+            echo \"    HostName localhost\" >> .ssh/config.d/$LOCAL_NAME
+        "
+
+else
+    echo "${PREFIX}${COLOR_WHITE}usage: .ssh_tunnel [restart|start|stop|status|config|register]${COLOR_RESET}"
+fi
