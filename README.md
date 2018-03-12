@@ -18,9 +18,11 @@ Machine A is unreachable.
 
 Machibe B is reachable.
 
-o) A links to B with ssh tunnel.
-o) From outside you link B.
-o) From B you enter A as the tunnel is open.
+- A links to B with ssh tunnel.
+
+- From outside you link B.
+
+- From B you enter A as the tunnel is open.
 
 ## How to enter A from B
 
@@ -58,13 +60,13 @@ ssh <user on A>@<host or ip of B> -p <port that you exposed>
 
 ### Handing configuration
 
-o) If you do not want to make configuration and just to use it open ssh_tunnel and change the defailt values of the variables.
-o) If you want you can configure with
+- If you do not want to make configuration and just to use it open ssh_tunnel and change the defailt values of the variables.
+- If you want you can configure with
 ```
 ssh_tunnel config
 ```
 
-Just make sure it's executable before you run it
+### Just make sure it's executable before you run it
 
 ```
 chmod +x ssh_tunnel
