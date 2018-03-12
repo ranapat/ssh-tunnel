@@ -1,30 +1,34 @@
-# ssh tunner
+# ssh tunnel
 
-Handle ssh tunnel with another machine
+Handle ssh tunnel with another machine.
 
-Can establish, reset, stop, test and configuration ssh tunnel to another machine
+Can establish, reset, stop, test and generate ssh configuration.
 
 ## What is this
 
-Do you have a machine without a real IP or behind a firewall? Do you have a spare machine with real IP?
+Do you have a machine without a real IP or behind a firewall?
+Do you have a spare machine with real IP?
 Do you want to access the first one somehow from outside?
 
 SSH tunnel is just a simple wrap around what ssh provides by default.
 
-## Basid idea
+## Basic idea
 
-Machine A is unreachable
-Machibe B is reachable
+Machine A is unreachable.
 
-A links to B with ssh tunnel.
-From outside you link B.
-From B you enter A as the tunnel is open.
+Machibe B is reachable.
+
+o) A links to B with ssh tunnel.
+o) From outside you link B.
+o) From B you enter A as the tunnel is open.
 
 ## How to enter A from B
 
+```
 ssh <user>@localhost -p <port>
+```
 
-Or if you use .ssh/config
+Or if you use .ssh/config like this:
 
 ```
 Host your_host
@@ -32,11 +36,17 @@ Host your_host
     User your_user
     HostName localhost
 ```
+
+just try:
+
 ```
 ssh your_host
 ```
 
-You can generate this config automatically from A and copy it to B with `ssh_tunnel register`
+You can generate this config automatically from A and copy it to B with
+```
+ssh_tunnel register
+```
 
 ## Port mapping
 
@@ -46,11 +56,15 @@ ssh <user on A>@<host or ip of B> -p <port that you exposed>
 
 ## Basic usage
 
-### Before you start open ssh_tunnel file and change your settings.
+### Handing configuration
 
-If you prefer to move them out and keep them inside. As you wish.
+o) If you do not want to make configuration and just to use it open ssh_tunnel and change the defailt values of the variables.
+o) If you want you can configure with
+```
+ssh_tunnel config
+```
 
-make sure it's executable
+Just make sure it's executable before you run it
 
 ```
 chmod +x ssh_tunnel
