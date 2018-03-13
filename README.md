@@ -1,22 +1,24 @@
 # ssh tunnel
 
-Handle ssh tunnel with another machine.
+Simple wrap around ssh tunnel.
 
-Can establish, reset, stop, test and generate ssh configuration.
+Can establish, reset, stop, test and generate ssh configuration netween two machines.
 
 ## What is this
 
 Do you have a machine without a real IP or behind a firewall?
+
 Do you have a spare machine with real IP?
+
 Do you want to access the first one somehow from outside?
 
 SSH tunnel is just a simple wrap around what ssh provides by default.
 
 ## Basic idea
 
-Machine A is unreachable.
+- Machine A is unreachable.
 
-Machibe B is reachable.
+- Machibe B is reachable.
 
 - A links to B with ssh tunnel.
 
