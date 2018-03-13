@@ -1,5 +1,11 @@
 #!/bin/bash
 
+if [ -t 0 ]; then
+    INTERACTIVE=1
+else
+    INTERACTIVE=0
+fi
+
 DEFAULT_REMOTE_HOST='your.host.name'
 DEFAULT_REMOTE_PORT='10000'
 DEFAULT_LOCAL_PORT='22'
@@ -12,13 +18,19 @@ CONFIG_DIRECTORY="$HOME/.ssh_tunnel.d"
 CONFIG_FILE="$CONFIG_DIRECTORY/config"
 SECURED_CONFIG_FILE='/tmp/.ssh_tunnel.config'
 
-COLOR_RED=`tput setaf 1`
-COLOR_GREEN=`tput setaf 2`
-COLOR_YELLOW=`tput setaf 3`
-COLOR_WHITE=`tput setaf 7`
-COLOR_GRAY=`tput setaf 8`
-COLOR_LIGHT_GREEN=`tput setaf 10`
-COLOR_RESET=`tput sgr0`
+if [ "$INTERACTIVE" = "0" ]; then
+    echo ""
+
+    PREFIX="`date +'%Y-%m-%d %H-%M-%S'` ";
+else
+    COLOR_RED=`tput setaf 1`
+    COLOR_GREEN=`tput setaf 2`
+    COLOR_YELLOW=`tput setaf 3`
+    COLOR_WHITE=`tput setaf 7`
+    COLOR_GRAY=`tput setaf 8`
+    COLOR_LIGHT_GREEN=`tput setaf 10`
+    COLOR_RESET=`tput sgr0`
+fi
 
 function loadConfig() {
     if [ ! -f $CONFIG_FILE ]; then
@@ -61,19 +73,7 @@ unset -f loadConfig
 
 CURRENT_PID=$(ps ax | grep ssh | grep "${REMOTE_PORT}:${LOCAL_HOST}:${LOCAL_PORT} ${REMOTE_HOST}" | awk '{print $1}')
 
-if [ -t 0 ]; then
-    INTERACTIVE=1
-else
-    INTERACTIVE=0
-fi
-
 ACTION="$1"
-
-if [ "$INTERACTIVE" = "0" ]; then
-    echo ""
-
-    PREFIX="`date +'%Y-%m-%d %H-%M-%S'` ";
-fi
 
 if [ "$1" = "status" ]; then
     if [ -z "${CURRENT_PID}" ]; then
