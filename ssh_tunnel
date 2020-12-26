@@ -9,6 +9,7 @@ fi
 DEFAULT_REMOTE_HOST='your.host.name'
 DEFAULT_REMOTE_PORT='10000'
 DEFAULT_LOCAL_PORT='22'
+DEFAULT_LOCAL_MONITOR_PORT='20000'
 DEFAULT_LOCAL_NAME='current.location'
 DEFAULT_LOCAL_USER='user'
 
@@ -40,6 +41,7 @@ function loadConfig() {
         REMOTE_HOST=$DEFAULT_REMOTE_HOST
         REMOTE_PORT=$DEFAULT_REMOTE_PORT
         LOCAL_PORT=$DEFAULT_LOCAL_PORT
+        LOCAL_MONITOR_PORT=$DEFAULT_LOCAL_MONITOR_PORT
         LOCAL_NAME=$DEFAULT_LOCAL_NAME
         LOCAL_USER=$DEFAULT_LOCAL_USER
     else
@@ -57,6 +59,7 @@ function loadConfig() {
         if [ -z ${remote_host+x} ]; then REMOTE_HOST=$DEFAULT_REMOTE_HOST; else REMOTE_HOST=$remote_host; fi
         if [ -z ${remote_port+x} ]; then REMOTE_PORT=$DEFAULT_REMOTE_PORT; else REMOTE_PORT=$remote_port; fi
         if [ -z ${local_port+x} ]; then LOCAL_PORT=$DEFAULT_LOCAL_PORT; else LOCAL_PORT=$local_port; fi
+        if [ -z ${local_monitor_port+x} ]; then LOCAL_MONITOR_PORT=$DEFAULT_LOCAL_MONITOR_PORT; else LOCAL_MONITOR_PORT=$local_monitor_port; fi
         if [ -z ${local_name+x} ]; then LOCAL_NAME=$DEFAULT_LOCAL_NAME; else LOCAL_NAME=$local_name; fi
         if [ -z ${local_user+x} ]; then LOCAL_USER=$DEFAULT_LOCAL_USER; else LOCAL_USER=$local_user; fi
 
@@ -71,7 +74,7 @@ function loadConfig() {
 loadConfig
 unset -f loadConfig
 
-CURRENT_PID=$(ps ax | grep ssh | grep "${REMOTE_PORT}:${LOCAL_HOST}:${LOCAL_PORT} ${REMOTE_HOST}" | awk '{print $1}')
+CURRENT_PID=$(ps ax | grep ssh | grep "${REMOTE_PORT}:${LOCAL_HOST}:${LOCAL_PORT}" | grep "${REMOTE_HOST}" | awk '{print $1}')
 
 ACTION="$1"
 
@@ -102,7 +105,7 @@ elif [ "$1" = "stop" ]; then
 elif [ "$1" = "start" ]; then
     if [ -z "${CURRENT_PID}" ]; then
         echo "${PREFIX}${COLOR_YELLOW}currently not connected, connecting...${COLOR_RESET}"
-        nohup ssh -f -N -R $REMOTE_PORT:$LOCAL_HOST:$LOCAL_PORT $REMOTE_HOST
+        nohup autossh -M $LOCAL_MONITOR_PORT -f -N $REMOTE_HOST -R $REMOTE_PORT:$LOCAL_HOST:$LOCAL_PORT -C
     else
         echo "${PREFIX}${COLOR_YELLOW}already connected with pid ${COLOR_GREEN}$CURRENT_PID${COLOR_RESET}"
 
@@ -113,7 +116,7 @@ elif [ "$1" = "start" ]; then
             kill -9 $CURRENT_PID
 
             echo "${PREFIX}${COLOR_YELLOW}recreating the connection...${COLOR_RESET}"
-            nohup ssh -f -N -R $REMOTE_PORT:$LOCAL_HOST:$LOCAL_PORT $REMOTE_HOST
+            nohup autossh -M $LOCAL_MONITOR_PORT -f -N $REMOTE_HOST -R $REMOTE_PORT:$LOCAL_HOST:$LOCAL_PORT -C
         else
             echo "${PREFIX}${COLOR_LIGHT_GREEN}connection is alive${COLOR_RESET}"
         fi
@@ -122,12 +125,12 @@ elif [ "$1" = "start" ]; then
 elif [ "$1" = "restart" ]; then
     if [ -z "${CURRENT_PID}" ]; then
         echo "${PREFIX}${COLOR_YELLOW}currently not connected, connecting...${COLOR_RESET}"
-        nohup ssh -f -N -R $REMOTE_PORT:$LOCAL_HOST:$LOCAL_PORT $REMOTE_HOST
+        nohup autossh -M $LOCAL_MONITOR_PORT -f -N $REMOTE_HOST -R $REMOTE_PORT:$LOCAL_HOST:$LOCAL_PORT -C
     else
         echo "${PREFIX}${COLOR_YELLOW}already connected with pid ${COLOR_GREEN}$CURRENT_PID${COLOR_RESET}"
         kill -9 $CURRENT_PID
         echo "${PREFIX}${COLOR_YELLOW}killed process with pid ${COLOR_GREEN}$CURRENT_PID${COLOR_RESET}"
-        nohup ssh -f -N -R $REMOTE_PORT:$LOCAL_HOST:$LOCAL_PORT $REMOTE_HOST
+        nohup autossh -M $LOCAL_MONITOR_PORT -f -N $REMOTE_HOST -R $REMOTE_PORT:$LOCAL_HOST:$LOCAL_PORT -C
     fi
 
 elif [ "$1" = "config" ]; then
@@ -143,6 +146,7 @@ elif [ "$1" = "config" ]; then
         echo "remote_host=$DEFAULT_REMOTE_HOST" >> $CONFIG_FILE
         echo "remote_port=$DEFAULT_REMOTE_PORT" >> $CONFIG_FILE
         echo "local_port=$DEFAULT_LOCAL_PORT" >> $CONFIG_FILE
+        echo "local_monitor_port=$DEFAULT_LOCAL_MONITOR_PORT" >> $CONFIG_FILE
         echo "local_name=$DEFAULT_LOCAL_NAME" >> $CONFIG_FILE
         echo "local_user=$DEFAULT_LOCAL_USER" >> $CONFIG_FILE
     fi
