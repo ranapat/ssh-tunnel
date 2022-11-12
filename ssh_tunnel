@@ -105,7 +105,7 @@ elif [ "$1" = "stop" ]; then
 elif [ "$1" = "start" ]; then
     if [ -z "${CURRENT_PID}" ]; then
         echo "${PREFIX}${COLOR_YELLOW}currently not connected, connecting...${COLOR_RESET}"
-        nohup autossh -M $LOCAL_MONITOR_PORT -f -N $REMOTE_HOST -R $REMOTE_PORT:$LOCAL_HOST:$LOCAL_PORT -C
+        nohup autossh -M $LOCAL_MONITOR_PORT -o "ServerAliveInterval 30" -o "ServerAliveCountMax 3" -f -N $REMOTE_HOST -R $REMOTE_PORT:$LOCAL_HOST:$LOCAL_PORT -C
     else
         echo "${PREFIX}${COLOR_YELLOW}already connected with pid ${COLOR_GREEN}$CURRENT_PID${COLOR_RESET}"
 
@@ -116,7 +116,7 @@ elif [ "$1" = "start" ]; then
             kill -9 $CURRENT_PID
 
             echo "${PREFIX}${COLOR_YELLOW}recreating the connection...${COLOR_RESET}"
-            nohup autossh -M $LOCAL_MONITOR_PORT -f -N $REMOTE_HOST -R $REMOTE_PORT:$LOCAL_HOST:$LOCAL_PORT -C
+            nohup autossh -M $LOCAL_MONITOR_PORT -o "ServerAliveInterval 30" -o "ServerAliveCountMax 3" -f -N $REMOTE_HOST -R $REMOTE_PORT:$LOCAL_HOST:$LOCAL_PORT -C
         else
             echo "${PREFIX}${COLOR_LIGHT_GREEN}connection is alive${COLOR_RESET}"
         fi
@@ -125,12 +125,12 @@ elif [ "$1" = "start" ]; then
 elif [ "$1" = "restart" ]; then
     if [ -z "${CURRENT_PID}" ]; then
         echo "${PREFIX}${COLOR_YELLOW}currently not connected, connecting...${COLOR_RESET}"
-        nohup autossh -M $LOCAL_MONITOR_PORT -f -N $REMOTE_HOST -R $REMOTE_PORT:$LOCAL_HOST:$LOCAL_PORT -C
+       	nohup autossh -M $LOCAL_MONITOR_PORT -o "ServerAliveInterval 30" -o "ServerAliveCountMax 3" -f -N $REMOTE_HOST -R $REMOTE_PORT:$LOCAL_HOST:$LOCAL_PORT -C
     else
         echo "${PREFIX}${COLOR_YELLOW}already connected with pid ${COLOR_GREEN}$CURRENT_PID${COLOR_RESET}"
         kill -9 $CURRENT_PID
         echo "${PREFIX}${COLOR_YELLOW}killed process with pid ${COLOR_GREEN}$CURRENT_PID${COLOR_RESET}"
-        nohup autossh -M $LOCAL_MONITOR_PORT -f -N $REMOTE_HOST -R $REMOTE_PORT:$LOCAL_HOST:$LOCAL_PORT -C
+        nohup autossh -M $LOCAL_MONITOR_PORT -o "ServerAliveInterval 30" -o "ServerAliveCountMax 3" -f -N $REMOTE_HOST -R $REMOTE_PORT:$LOCAL_HOST:$LOCAL_PORT -C
     fi
 
 elif [ "$1" = "config" ]; then
